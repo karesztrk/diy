@@ -1,75 +1,59 @@
-//-------------------------------------------------------------------------------------
-// HX711_ADC.h
-// Arduino master library for HX711 24-Bit Analog-to-Digital Converter for Weigh Scales
-// Olav Kallhovd sept2017
-// Tested with      : HX711 asian module on channel A and YZC-133 3kg load cell
-// Tested with MCU  : Arduino Nano
-//-------------------------------------------------------------------------------------
-/* This is an example sketch on how to find correct calibration factor for your HX711:
-   - Power up the scale and open Arduino serial terminal
-   - After stabelizing and tare is complete, put a known weight on the load cell
-   - Observe values on serial terminal
-   - Adjust the calibration factor until output value is same as your known weight:
-      - Sending 'l' from the serial terminal decrease factor by 1.0
-      - Sending 'L' from the serial terminal decrease factor by 10.0
-      - Sending 'h' from the serial terminal increase factor by 1.0
-      - Sending 'H' from the serial terminal increase factor by 10.0
-      - Sending 't' from the serial terminal call tare function
-   - Observe and note the value of the new calibration factor
-   - Use this new calibration factor in your sketch
-*/
+#include "HX711.h"
 
-#include <HX711_ADC.h>
-
-//HX711 constructor (dout pin, sck pin)
-HX711_ADC LoadCell(D1, D2);
-
-long t;
+HX711 scale;
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Wait...");
-  LoadCell.begin();
-  long stabilisingtime = 2000; // tare preciscion can be improved by adding a few seconds of stabilising time
-  LoadCell.start(stabilisingtime);
-  LoadCell.setCalFactor(20387.0); // user set calibration factor (float)
-  Serial.println("Startup + tare is complete");
+  Serial.begin(38400);
+  Serial.println("HX711 Demo");
+
+  Serial.println("Initializing the scale");
+  // parameter "gain" is ommited; the default value 128 is used by the library
+  // HX711.DOUT	- pin #A1
+  // HX711.PD_SCK	- pin #A0
+  scale.begin(D1, D2);
+
+  Serial.println("Before setting up the scale:");
+  Serial.print("read: \t\t");
+  Serial.println(scale.read());			// print a raw reading from the ADC
+
+  Serial.print("read average: \t\t");
+  Serial.println(scale.read_average(20));  	// print the average of 20 readings from the ADC
+
+  Serial.print("get value: \t\t");
+  Serial.println(scale.get_value(5));		// print the average of 5 readings from the ADC minus the tare weight (not set yet)
+
+  Serial.print("get units: \t\t");
+  Serial.println(scale.get_units(5), 1);	// print the average of 5 readings from the ADC minus tare weight (not set) divided
+						// by the SCALE parameter (not set yet)
+
+  scale.set_scale(20155.7);                      // this value is obtained by calibrating the scale with known weights; see the README for details
+  scale.tare();				        // reset the scale to 0
+
+  Serial.println("After setting up the scale:");
+
+  Serial.print("read: \t\t");
+  Serial.println(scale.read());                 // print a raw reading from the ADC
+
+  Serial.print("read average: \t\t");
+  Serial.println(scale.read_average(20));       // print the average of 20 readings from the ADC
+
+  Serial.print("get value: \t\t");
+  Serial.println(scale.get_value(5));		// print the average of 5 readings from the ADC minus the tare weight, set with tare()
+
+  Serial.print("get units: \t\t");
+  Serial.println(scale.get_units(5), 1);        // print the average of 5 readings from the ADC minus tare weight, divided
+						// by the SCALE parameter set with set_scale
+
+  Serial.println("Readings:");
 }
 
 void loop() {
-  //update() should be called at least as often as HX711 sample rate; >10Hz@10SPS, >80Hz@80SPS
-  //longer delay in scetch will reduce effective sample rate (be carefull with delay() in loop)
-  LoadCell.update();
+  Serial.print("one reading:\t");
+  Serial.print(scale.get_units(), 1);
+  Serial.print("\t| average:\t");
+  Serial.println(scale.get_units(10), 1);
 
-  //get smoothed value from data set + current calibration factor
-  if (millis() > t + 250) {
-    float i = LoadCell.getData();
-    float v = LoadCell.getCalFactor();
-    Serial.print("Load_cell output val: ");
-    Serial.print(i);
-    Serial.print("      Load_cell calFactor: ");
-    Serial.println(v);
-    t = millis();
-  }
-
-  //receive from serial terminal
-  if (Serial.available() > 0) {
-    float i;
-    char inByte = Serial.read();
-    if (inByte == 'l') i = -1.0;
-    else if (inByte == 'L') i = -10.0;
-    else if (inByte == 'h') i = 1.0;
-    else if (inByte == 'H') i = 10.0;
-    else if (inByte == 't') LoadCell.tareNoDelay();
-    if (i != 't') {
-      float v = LoadCell.getCalFactor() + i;
-      LoadCell.setCalFactor(v);
-    }
-  }
-
-  //check if last tare operation is complete
-  if (LoadCell.getTareStatus() == true) {
-    Serial.println("Tare complete");
-  }
-
+  scale.power_down();			        // put the ADC in sleep mode
+  delay(5000);
+  scale.power_up();
 }
