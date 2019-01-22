@@ -5,15 +5,32 @@
 #include <WiFiUdp.h>
 #include "HX711.h"
 
-// Scale Settings
+///////////////////////
+// Scale Definitions //
+///////////////////////
 const int SCALE_DOUT_PIN = D1;
 const int SCALE_SCK_PIN = D2;
 const float scaleValue = 20155.7;
-
+//////////////////////
+// Wifi Definitions //
+//////////////////////
 const char *ssid     = "MineroIT";
 const char *password = "Minero2018";
-String hostGoogle = "www.googleapis.com";
+///////////////////////
+// IFTTT Definitions //
+///////////////////////
+const char* IFTTT_host = "maker.ifttt.com";
+const int httpPort = 80;
+const char* IFTTT_key= "cqXTr5xq0NOWrgDTWi-cGlPimM_aZhn-BrAn1pk9pp_";
+const char* IFTTT_notification_event = "new_weight";
+////////////////////////
+// Google Definitions //
+////////////////////////
+const String hostGoogle = "www.googleapis.com";
 const int securePort = 443;
+const String clientId = "573483825659-lee6eet874b7n2ph6dv63p22902p5k9j.apps.googleusercontent.com";
+const String refreshToken = "1/oOWMZp4Ai45gtgLQ_S7iWckR_tF079KEjC0Z6XtnMQI";
+const String clientSecret = "2h316_5gZTzDpyF5IRePPnZZ";
 
 HX711 scale;
 WiFiUDP ntpUDP;
@@ -63,7 +80,9 @@ void loop() {
       if (debug) {
         Serial.print("New weight...");
         Serial.println(currentWeight, 1);
-        postWeight(String(currentWeight));
+        String weight = String(currentWeight);
+        sendNotification(weight);
+        postWeight(weight);
       }
     }
  
@@ -98,7 +117,7 @@ void switchMeasuring(bool state) {
 
 String refreshToken() {
   WiFiClientSecure client;
-  String mbodyRefresh = "client_secret=2h316_5gZTzDpyF5IRePPnZZ&grant_type=refresh_token&refresh_token=1/oOWMZp4Ai45gtgLQ_S7iWckR_tF079KEjC0Z6XtnMQI&client_id=573483825659-lee6eet874b7n2ph6dv63p22902p5k9j.apps.googleusercontent.com";
+  String mbodyRefresh = "client_secret=" + clientSecret + "&grant_type=refresh_token&refresh_token=" + refreshToken + "&client_id=" + clientId;
   Serial.println("REFRESH TOKEN\n\nConnecting to host\n");
 
   if (!client.connect(hostGoogle, securePort)) {
@@ -214,6 +233,42 @@ int postWeight(String weight) {
   
   Serial.print(F("\nPosted succesfully: "));
   Serial.println(weight);
+  client.stop();
+  return 1;
+}
+
+int sendNotification(String weight) {
+  WiFiClient client;
+  
+  // Make sure we can connect
+  if (!client.connect(IFTTT_host, httpPort)) {
+    return -1;
+  }
+
+  String payload = String("PATCH ") +  "/trigger/" + String(IFTTT_notification_event) + "/with/key/" + String(IFTTT_key) + "?value1=" + weight + " HTTP/1.1\n" +
+                   "Host: " + IFTTT_host + "\n";
+
+  client.println(payload);
+  Serial.println(payload);
+
+  unsigned long timeout = millis();
+  while (client.available() == 0) {
+    if (millis() - timeout > 5000) {
+      Serial.println(F("\n>>> Client Timeout !"));
+      client.stop();
+      return -22;
+    }
+  }
+
+  char status[32] = {0};
+  client.readBytesUntil('\r', status, sizeof(status));
+  if (strcmp(status, "HTTP/1.1 200 OK") != 0) {
+    Serial.print(F("Unexpected response: "));
+    Serial.println(status);
+    return -23;
+  }
+  
+  Serial.print(F("\n Notification sent succesfully."));
   client.stop();
   return 1;
 }
