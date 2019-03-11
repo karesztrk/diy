@@ -12,7 +12,7 @@ const int SCALE_DOUT_PIN = D1;
 const int SCALE_SCK_PIN = D2;
 const float scaleValue = 20155.7;
 const float scaleDelta = 0.1;
-const float validWeight = 1.0;
+const float validWeight = 5.0;
 //////////////////////
 // Wifi Definitions //
 //////////////////////
@@ -36,7 +36,7 @@ const String GOOGLE_CLIENT_SECRET = "2h316_5gZTzDpyF5IRePPnZZ";
 
 HX711 scale;
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP);
+NTPClient timeClient(ntpUDP, "time.google.com");
 
 bool measuring = false;
 bool debug = true;
