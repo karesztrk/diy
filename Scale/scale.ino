@@ -4,6 +4,7 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include "HX711.h"
+#include <TM1637Display.h>
 
 ///////////////////////
 // Scale Definitions //
@@ -16,8 +17,8 @@ const float validWeight = 5.0;
 //////////////////////
 // Wifi Definitions //
 //////////////////////
-const char *WIFI_SSID     = "MineroIT";
-const char *WIFI_PASSWORD = "Minero2018";
+const char *WIFI_SSID     = "Csokimaz";
+const char *WIFI_PASSWORD = "alpha12345";
 ///////////////////////
 // IFTTT Definitions //
 ///////////////////////
@@ -33,16 +34,27 @@ const int HTTPS_PORT = 443;
 const String GOOGLE_CLIENT_ID = "573483825659-lee6eet874b7n2ph6dv63p22902p5k9j.apps.googleusercontent.com";
 const String GOOGLE_REFRESH_TOKEN = "1/oOWMZp4Ai45gtgLQ_S7iWckR_tF079KEjC0Z6XtnMQI";
 const String GOOGLE_CLIENT_SECRET = "2h316_5gZTzDpyF5IRePPnZZ";
+///////////////////////
+// Segment Display ////
+///////////////////////
+const int DISPLAY_CLK = D4;
+const int DISPLAY_DIO = D3;
 
 HX711 scale;
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "time.google.com");
+TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
 
 bool measuring = false;
 bool debug = true;
 
 void setup() {
   Serial.begin(38400);
+  display.setBrightness(0x0f);
+  
+  // All segments on
+  uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };
+  display.setSegments(data);
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
@@ -68,6 +80,7 @@ void setup() {
   scale.set_scale(scaleValue);
   scale.tare();
   Serial.println("Done");
+  display.clear();
 }
 
 void loop() {
@@ -84,8 +97,10 @@ void loop() {
       }
 
       String weight = String(currentWeight);
+      displayWeight(weight);
       sendNotification(weight);
       postWeight(weight);
+      clearDisplay();
     }
 
   } 
@@ -277,3 +292,18 @@ int sendNotification(String weight) {
   return 1;
 }
 
+void displayWeight(String weight) {
+  int weightNumber = (int) weight.toFloat();
+  for(int i = 0; i < 3; i++) {
+    if (i != 0) {
+      display.clear();
+      delay(1000);
+    }
+    display.showNumberDec(weightNumber, false);
+    delay(1000);
+  }
+}
+
+void clearDisplay() {
+  display.clear();
+}
