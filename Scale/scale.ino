@@ -48,13 +48,33 @@ TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
 bool measuring = false;
 bool debug = true;
 
+const uint8_t SEG_SEND[] = {
+  SEG_A | SEG_F | SEG_G | SEG_C | SEG_D,           // s
+  SEG_A | SEG_D | SEG_E | SEG_F | SEG_G,           // E
+  SEG_C | SEG_E | SEG_G,                           // n
+  SEG_B | SEG_C | SEG_D | SEG_E | SEG_G            // d
+  };
+
+const uint8_t SEG_DONE[] = {
+  SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,           // d
+  SEG_G | SEG_E | SEG_C | SEG_D,                   // o
+  SEG_C | SEG_E | SEG_G,                           // n
+  SEG_A | SEG_D | SEG_E | SEG_F | SEG_G            // E
+  };
+
+const uint8_t SEG_BOOT[] = {
+  SEG_F | SEG_G | SEG_E | SEG_C | SEG_D,           // B
+  SEG_G | SEG_E | SEG_C | SEG_D,                   // o
+  SEG_G | SEG_E | SEG_C | SEG_D,                   // o
+  SEG_F | SEG_G | SEG_E | SEG_D                    // t
+  };
+
 void setup() {
   Serial.begin(38400);
   display.setBrightness(0x0f);
   
-  // All segments on
-  uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };
-  display.setSegments(data);
+  // Display booting...
+  display.setSegments(SEG_BOOT);
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
@@ -80,6 +100,9 @@ void setup() {
   scale.set_scale(scaleValue);
   scale.tare();
   Serial.println("Done");
+
+  display.setSegments(SEG_DONE);
+  delay(1000);
   display.clear();
 }
 
@@ -97,7 +120,8 @@ void loop() {
       }
 
       String weight = String(currentWeight);
-      displayWeight(weight);
+      displayWeight(currentWeight);
+      displaySending();
       sendNotification(weight);
       postWeight(weight);
       clearDisplay();
@@ -292,18 +316,25 @@ int sendNotification(String weight) {
   return 1;
 }
 
-void displayWeight(String weight) {
-  int weightNumber = (int) weight.toFloat();
+void displayWeight(float weight) {
+  float weightNumber = weight * 100.0;
   for(int i = 0; i < 3; i++) {
     if (i != 0) {
       display.clear();
       delay(1000);
     }
-    display.showNumberDec(weightNumber, false);
+    display.showNumberDecEx(weightNumber, 0xE0, false);
     delay(1000);
   }
 }
 
 void clearDisplay() {
+  display.setSegments(SEG_DONE);
+  delay(1000);
   display.clear();
+}
+
+void displaySending() {
+  display.clear();
+  display.setSegments(SEG_SEND);
 }
