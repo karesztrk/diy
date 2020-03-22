@@ -43,7 +43,9 @@ WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "time.google.com");
 TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
 
-bool debug = true;
+bool debug = false;
+
+const uint8_t ARROW_HEAD = SEG_A | SEG_B | SEG_C | SEG_D;  // Đ
 
 const uint8_t SEG_SEND[] = {
   SEG_A | SEG_F | SEG_G | SEG_C | SEG_D,           // S
@@ -53,10 +55,10 @@ const uint8_t SEG_SEND[] = {
   };
 
 const uint8_t SEG_DONE[] = {
-  SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,           // d
+  0,
+  0,
   SEG_G | SEG_E | SEG_C | SEG_D,                   // o
-  SEG_C | SEG_E | SEG_G,                           // n
-  SEG_A | SEG_D | SEG_E | SEG_F | SEG_G            // E
+  SEG_A | SEG_C | SEG_E | SEG_F | SEG_G,           // k
   };
 
 const uint8_t SEG_FAIL[] = {
@@ -327,28 +329,34 @@ void clearDisplay(bool displayResult, int result) {
 
 bool prepareSending() {
 
-  uint8_t PROGRESS_BAR[] = {SEG_G, 0, 0, 0};
+  uint8_t PROGRESS_BAR[] = {ARROW_HEAD, 0, 0, 0};
   
   display.clear();
   display.setSegments(SEG_SEND);
   delay(1000);
 
-  for(int i = 0; i < 4; i++) {
+  for(int i = 0; i < 8; i++) {
     display.setSegments(PROGRESS_BAR);
 
-    float currentWeight = measureWeight();
-    if (!isValidMeasurement(currentWeight)) {
-      if (debug) {
-        Serial.println("Canceled");
+    // Validate weight on every second iteration
+    if (i % 2 != 0) {
+      float currentWeight = measureWeight();
+      if (!isValidMeasurement(currentWeight)) {
+        if (debug) {
+          Serial.println("Canceled");
+        }
+        return false;
       }
-      return false;
     }
     
     if (i < 3) {
-      PROGRESS_BAR[i+1] = SEG_G;
+      PROGRESS_BAR[i] = SEG_G;
+      PROGRESS_BAR[i+1] = ARROW_HEAD;
+    } else if (i > 3) {
+      PROGRESS_BAR[i - 4] = 0;
     }
     
-    delay(500);
+    delay(250);
   }
   
 }
