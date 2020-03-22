@@ -330,16 +330,18 @@ void clearDisplay(bool displayResult, int result) {
 bool prepareSending() {
 
   uint8_t PROGRESS_BAR[] = {ARROW_HEAD, 0, 0, 0};
-  
+  const int progressCycles = 8;
+  const int progressCyclesHalf = progressCycles / 2;
+  const int progressCyclesHalfWay = progressCyclesHalf - 1;
   display.clear();
   display.setSegments(SEG_SEND);
   delay(1000);
 
-  for(int i = 0; i < 8; i++) {
+  for(int i = 0; i < progressCycles; i++) {
     display.setSegments(PROGRESS_BAR);
 
-    // Validate weight on every second iteration
-    if (i % 2 != 0) {
+    // Validate weight on half way
+    if (i == progressCyclesHalfWay) {
       float currentWeight = measureWeight();
       if (!isValidMeasurement(currentWeight)) {
         if (debug) {
@@ -349,11 +351,11 @@ bool prepareSending() {
       }
     }
     
-    if (i < 3) {
+    if (i < progressCyclesHalfWay) {
       PROGRESS_BAR[i] = SEG_G;
       PROGRESS_BAR[i+1] = ARROW_HEAD;
-    } else if (i > 3) {
-      PROGRESS_BAR[i - 4] = 0;
+    } else if (i > progressCyclesHalfWay) {
+      PROGRESS_BAR[i - progressCyclesHalf] = 0;
     }
     
     delay(250);
