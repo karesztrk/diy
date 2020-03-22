@@ -28,7 +28,7 @@ const String GOOGLE_HOST = "www.googleapis.com";
 const int HTTPS_PORT = 443;
 const String GOOGLE_CLIENT_ID = "573483825659-lee6eet874b7n2ph6dv63p22902p5k9j.apps.googleusercontent.com";
 // {Kami <= 65, Karesz <= 100}
-const String GOOGLE_REFRESH_TOKENS[] = {"1/rJIAvmvmU8rO3TBTjtc15qOZPKobwKuQSmPQ_MZ1NzLx4nMeq9cbW2tGC5mgH570", "1/oOWMZp4Ai45gtgLQ_S7iWckR_tF079KEjC0Z6XtnMQI"};
+const String GOOGLE_REFRESH_TOKENS[] = {"1/g0qXDxjJQDSZkQHBpeh8Hq8UkKyE47H8Gy5Rnr0OQbM", "1/oOWMZp4Ai45gtgLQ_S7iWckR_tF079KEjC0Z6XtnMQI"};
 const int GOOGLE_REFRESH_TOKEN_WEIGHT_MAPPER[] = {65, 100};
 const String GOOGLE_CLIENT_SECRET = "2h316_5gZTzDpyF5IRePPnZZ";
 ///////////////////////
@@ -219,7 +219,7 @@ String refreshToken(float weight) {
   if (!client.find(carriageReturn)) return "";
 
   // https://arduinojson.org/assistant/
-  const size_t capacity = JSON_OBJECT_SIZE(4) + 270;
+  const size_t capacity = JSON_OBJECT_SIZE(4) + 310;
   DynamicJsonDocument doc(capacity);
 
   // Parse JSON object - read docs
